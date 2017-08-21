@@ -110,19 +110,31 @@ OSXOutput::OSXOutput(const ConfigBlock &block)
 int
 OSXOutput::GetVolume()
 {
-	// TODO: handle failure (OSStatus)
 	AudioUnitParameterValue fvolume;
-	AudioUnitGetParameter (au, kHALOutputParam_Volume,
+	char errormsg[1024];
+
+	OSStatus status = AudioUnitGetParameter (au, kHALOutputParam_Volume,
 			kAudioUnitScope_Global, 0, &fvolume);
+	if (status != noErr) {
+		osx_os_status_to_cstring(status, errormsg, sizeof(errormsg));
+		FormatWarning(osx_output_domain, "unable to get volume: %s", errormsg);
+		return 100;
+	}
 	return static_cast<int>(fvolume * 100);
 }
 
 void
 OSXOutput::SetVolume(unsigned new_volume) {
 	float fvolume = new_volume / 100.0;
-	// TODO: handle failure (OSStatus)
-	AudioUnitSetParameter (au, kHALOutputParam_Volume,
+	char errormsg[1024];
+
+	OSStatus status = AudioUnitSetParameter (au, kHALOutputParam_Volume,
 			kAudioUnitScope_Global, 0, fvolume, 0);
+	if (status != noErr) {
+		osx_os_status_to_cstring(status, errormsg, sizeof(errormsg));
+		FormatWarning(osx_output_domain, "unable to set new volume %u: %s",
+				new_volume, errormsg);
+	}
 }
 
 static AudioOutput *
