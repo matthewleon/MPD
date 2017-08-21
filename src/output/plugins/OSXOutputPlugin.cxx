@@ -113,7 +113,7 @@ OSXOutput::GetVolume()
 	AudioUnitParameterValue fvolume;
 	char errormsg[1024];
 
-	OSStatus status = AudioUnitGetParameter (au, kHALOutputParam_Volume,
+	OSStatus status = AudioUnitGetParameter(au, kHALOutputParam_Volume,
 			kAudioUnitScope_Global, 0, &fvolume);
 	if (status != noErr) {
 		osx_os_status_to_cstring(status, errormsg, sizeof(errormsg));
@@ -128,7 +128,7 @@ OSXOutput::SetVolume(unsigned new_volume) {
 	float fvolume = new_volume / 100.0;
 	char errormsg[1024];
 
-	OSStatus status = AudioUnitSetParameter (au, kHALOutputParam_Volume,
+	OSStatus status = AudioUnitSetParameter(au, kHALOutputParam_Volume,
 			kAudioUnitScope_Global, 0, fvolume, 0);
 	if (status != noErr) {
 		osx_os_status_to_cstring(status, errormsg, sizeof(errormsg));
