@@ -20,6 +20,7 @@
 #include "config.h"
 #include "OSXOutputPlugin.hxx"
 #include "../OutputAPI.hxx"
+#include "mixer/MixerList.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/Domain.hxx"
@@ -53,6 +54,9 @@ struct OSXOutput {
 	boost::lockfree::spsc_queue<uint8_t> *ring_buffer;
 
 	OSXOutput(const ConfigBlock &block);
+
+	int GetVolume();
+	void SetVolume(unsigned new_volume);
 };
 
 static constexpr Domain osx_output_domain("osx_output");
@@ -101,6 +105,24 @@ OSXOutput::OSXOutput(const ConfigBlock &block)
 	channel_map = block.GetBlockValue("channel_map");
 	hog_device = block.GetBlockValue("hog_device", false);
 	sync_sample_rate = block.GetBlockValue("sync_sample_rate", false);
+}
+
+int
+OSXOutput::GetVolume()
+{
+	// TODO: handle failure (OSStatus)
+	AudioUnitParameterValue fvolume;
+	AudioUnitGetParameter (au, kHALOutputParam_Volume,
+			kAudioUnitScope_Global, 0, &fvolume);
+	return static_cast<int>(fvolume * 100);
+}
+
+void
+OSXOutput::SetVolume(unsigned new_volume) {
+	float fvolume = new_volume / 100.0;
+	// TODO: handle failure (OSStatus)
+	AudioUnitSetParameter (au, kHALOutputParam_Volume,
+			kAudioUnitScope_Global, 0, fvolume, 0);
 }
 
 static AudioOutput *
@@ -678,6 +700,18 @@ osx_output_delay(AudioOutput *ao) noexcept
 		: std::chrono::milliseconds(25);
 }
 
+int
+osx_output_get_volume(OSXOutput &output)
+{
+	return output.GetVolume();
+}
+
+void
+osx_output_set_volume(OSXOutput &output, unsigned new_volume)
+{
+	return output.SetVolume(new_volume);
+}
+
 const struct AudioOutputPlugin osx_output_plugin = {
 	"osx",
 	osx_output_test_default_device,
@@ -693,5 +727,6 @@ const struct AudioOutputPlugin osx_output_plugin = {
 	nullptr,
 	nullptr,
 	nullptr,
-	nullptr,
+
+	&osx_mixer_plugin,
 };
